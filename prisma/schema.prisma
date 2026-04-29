@@ -1,0 +1,605 @@
+// =============================================================================
+// ZenSocial — Prisma Schema
+// MySQL + Prisma, multi-tenant social media content management platform
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum ContentType {
+  BANNER
+  VIDEO
+  STORY
+  REEL
+  CAROUSEL
+  SOCIAL_PROOF
+  INFOGRAPHIC
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REVISION_REQUESTED
+}
+
+enum DesignRequestStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum BatchStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PlatformSlug {
+  FACEBOOK
+  INSTAGRAM
+  LINKEDIN
+  GOOGLE_MY_BUSINESS
+  TWITTER_X
+  PINTEREST
+  TIKTOK
+  YOUTUBE
+  TRIPADVISOR
+  LINKTREE
+  BLUESKY
+}
+
+enum NotificationType {
+  BATCH_PUBLISHED
+  CONTENT_APPROVED
+  DESIGN_REQUEST_UPDATED
+  DESIGN_REQUEST_COMPLETED
+  FEEDBACK_RECEIVED
+  SYSTEM
+}
+
+// =============================================================================
+// USERS & AUTH
+// =============================================================================
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  role         Role      @default(CLIENT)
+  firstName    String
+  lastName     String
+  avatarUrl    String?
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  // Relations
+  client        Client?
+  sessions      Session[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+}
+
+// Server-side session store (JWT sessions can skip this; use for revocation)
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// =============================================================================
+// CLIENTS (tenant profile, 1-to-1 with User)
+// =============================================================================
+
+model Client {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  nicheId        String
+  packageId      String
+  businessName   String
+  // slug is used for public preview URLs e.g. /preview/dr-karin-harp
+  slug           String    @unique
+  logoUrl        String?
+  // Brand colors for personalised preview overlays
+  primaryColor   String?
+  secondaryColor String?
+  tagline        String?
+  website        String?
+  phone          String?
+  address        String?
+  isActive       Boolean   @default(true)
+  onboardedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  // Relations
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  niche          Niche           @relation(fields: [nicheId], references: [id])
+  package        Package         @relation(fields: [packageId], references: [id])
+  monthlyBatches MonthlyBatch[]
+  designRequests DesignRequest[]
+  feedback       Feedback[]
+
+  @@index([nicheId])
+  @@index([packageId])
+  @@index([slug])
+  @@index([isActive])
+}
+
+// =============================================================================
+// NICHES
+// Admin-managed taxonomy. e.g. "Dental", "Cafe", "Real Estate"
+// =============================================================================
+
+model Niche {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
+  iconUrl     String?
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  clients          Client[]
+  contentTemplates ContentTemplate[]
+  packages         Package[]
+
+  @@index([slug])
+  @@index([isActive])
+}
+
+// =============================================================================
+// PACKAGES & CATEGORIES
+// Package = what a client subscribes to (e.g. "Dental Starter")
+// PackageCategory = the content slots within a package (e.g. "8 Banners/month")
+// =============================================================================
+
+model Package {
+  id               String   @id @default(cuid())
+  // null = platform-wide package, non-null = niche-specific
+  nicheId          String?
+  name             String
+  slug             String   @unique
+  description      String?  @db.Text
+  monthlyPostLimit Int
+  price            Decimal  @db.Decimal(10, 2)
+  isActive         Boolean  @default(true)
+  sortOrder        Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  niche             Niche?            @relation(fields: [nicheId], references: [id])
+  clients           Client[]
+  packageCategories PackageCategory[]
+
+  @@index([nicheId])
+  @@index([slug])
+  @@index([isActive])
+}
+
+// Each package has N categories defining the content breakdown per month
+model PackageCategory {
+  id          String      @id @default(cuid())
+  packageId   String
+  name        String      // "Promotional Banners", "Educational Reels"
+  contentType ContentType
+  // How many items of this type the client receives per month
+  monthlyLimit Int
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  package          Package           @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  contentTemplates ContentTemplate[]
+
+  @@index([packageId])
+  @@index([contentType])
+}
+
+// =============================================================================
+// PLATFORMS
+// Static seed data — the 11 supported platforms
+// =============================================================================
+
+model Platform {
+  id          String       @id @default(cuid())
+  slug        PlatformSlug @unique
+  name        String
+  iconUrl     String?
+  // Recommended aspect ratio string e.g. "1:1", "9:16", "16:9"
+  aspectRatio String?
+  isActive    Boolean      @default(true)
+  sortOrder   Int          @default(0)
+
+  // Relations
+  templatePlatforms       ContentTemplatePlatform[]
+  contentPlatformCaptions ContentPlatformCaption[]
+  monthlyContentPlatforms MonthlyContentPlatform[]
+}
+
+// =============================================================================
+// MEDIA LIBRARY
+// Central Cloudinary asset registry. Every uploaded file gets one row here.
+// =============================================================================
+
+model Media {
+  id           String   @id @default(cuid())
+  cloudinaryId String   @unique  // Cloudinary public_id
+  url          String   // Cloudinary http URL
+  secureUrl    String   // Cloudinary https URL (always use this)
+  format       String   // "jpg", "png", "mp4", "gif"
+  resourceType String   // "image", "video", "raw"
+  width        Int?
+  height       Int?
+  // Duration in seconds for video assets
+  duration     Float?
+  bytes        Int
+  // Logical folder path in Cloudinary e.g. "templates/dental/banners"
+  folder       String?
+  altText      String?
+  uploadedById String?  // userId of uploader
+  createdAt    DateTime @default(now())
+
+  // Relations
+  contentTemplates    ContentTemplate[]
+  designRequestAssets DesignRequestAsset[]
+
+  @@index([cloudinaryId])
+  @@index([folder])
+  @@index([resourceType])
+}
+
+// =============================================================================
+// CONTENT TEMPLATES
+// Master content designs created by Admin, reusable across clients.
+// =============================================================================
+
+model ContentTemplate {
+  id                String        @id @default(cuid())
+  nicheId           String?
+  packageCategoryId String?
+  mediaId           String?       // primary Cloudinary asset
+  name              String
+  description       String?       @db.Text
+  contentType       ContentType
+  status            ContentStatus @default(DRAFT)
+  thumbnailUrl      String?       // Cloudinary eager transform / poster frame
+  // Default text fields — clients override these per content item
+  defaultTagline    String?
+  defaultCaption    String?       @db.Text
+  defaultCta        String?       // Call-to-action button text
+  // Serialised JSON array of freeform tags for search/filtering
+  tags              Json?
+  sortOrder         Int           @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relations
+  niche            Niche?           @relation(fields: [nicheId], references: [id])
+  packageCategory  PackageCategory? @relation(fields: [packageCategoryId], references: [id])
+  media            Media?           @relation(fields: [mediaId], references: [id])
+  platforms        ContentTemplatePlatform[]
+  monthlyItems     MonthlyContentItem[]
+
+  @@index([nicheId])
+  @@index([packageCategoryId])
+  @@index([contentType])
+  @@index([status])
+}
+
+// Many-to-many: ContentTemplate ↔ Platform
+model ContentTemplatePlatform {
+  id         String @id @default(cuid())
+  templateId String
+  platformId String
+
+  template ContentTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  platform Platform        @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, platformId])
+  @@index([templateId])
+  @@index([platformId])
+}
+
+// =============================================================================
+// MONTHLY BATCHES
+// One batch = one month's content delivery for one client.
+// Admin creates it, publishes it, client sees it.
+// =============================================================================
+
+model MonthlyBatch {
+  id          String      @id @default(cuid())
+  clientId    String
+  month       Int         // 1–12
+  year        Int
+  status      BatchStatus @default(DRAFT)
+  publishedAt DateTime?
+  // Deadline for client to complete approvals
+  dueDate     DateTime?
+  notes       String?     @db.Text
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  client       Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  contentItems MonthlyContentItem[]
+
+  // One batch per client per month
+  @@unique([clientId, month, year])
+  @@index([clientId])
+  @@index([status])
+  @@index([year, month])
+}
+
+// =============================================================================
+// MONTHLY CONTENT ITEMS
+// An instance of a ContentTemplate assigned to a specific batch.
+// Stores client text overrides and tracks approval state.
+// =============================================================================
+
+model MonthlyContentItem {
+  id       String @id @default(cuid())
+  batchId  String
+  templateId String
+  sortOrder  Int    @default(0)
+
+  // ── Client-editable text overrides (null = use template default) ──────────
+  tagline  String?
+  caption  String?  @db.Text
+  cta      String?
+
+  // ── Approval lifecycle ────────────────────────────────────────────────────
+  approvalStatus ApprovalStatus @default(PENDING)
+  // Locked once all edits are finalised and content enters production
+  isLocked       Boolean        @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  batch            MonthlyBatch             @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  template         ContentTemplate          @relation(fields: [templateId], references: [id])
+  platforms        MonthlyContentPlatform[]
+  platformCaptions ContentPlatformCaption[]
+  approval         Approval?
+  designRequests   DesignRequest[]
+  textEditHistory  TextEditHistory[]
+
+  @@index([batchId])
+  @@index([templateId])
+  @@index([approvalStatus])
+  @@index([isLocked])
+}
+
+// Which platforms this specific content item is published to
+model MonthlyContentPlatform {
+  id            String @id @default(cuid())
+  contentItemId String
+  platformId    String
+
+  contentItem MonthlyContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  platform    Platform            @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([contentItemId, platformId])
+  @@index([contentItemId])
+  @@index([platformId])
+}
+
+// Platform-specific caption overrides per content item
+// e.g. Instagram caption differs from LinkedIn caption for the same design
+model ContentPlatformCaption {
+  id            String   @id @default(cuid())
+  contentItemId String
+  platformId    String
+  caption       String   @db.Text
+  hashtags      String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  contentItem MonthlyContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  platform    Platform            @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([contentItemId, platformId])
+  @@index([contentItemId])
+  @@index([platformId])
+}
+
+// =============================================================================
+// APPROVALS
+// One approval record per content item. Tracks the client's decision.
+// =============================================================================
+
+model Approval {
+  id            String         @id @default(cuid())
+  contentItemId String         @unique
+  status        ApprovalStatus @default(PENDING)
+  approvedAt    DateTime?
+  // IP stored for legal audit trail
+  approvedByIp  String?
+  // Client's free-text comment when requesting revisions
+  revisionNote  String?        @db.Text
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  contentItem MonthlyContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([contentItemId])
+}
+
+// =============================================================================
+// DESIGN CHANGE REQUESTS
+// Structured request from client asking Admin to modify a design.
+// Client cannot edit designs directly — this is the mediation channel.
+// =============================================================================
+
+model DesignRequest {
+  id            String              @id @default(cuid())
+  clientId      String
+  contentItemId String
+  status        DesignRequestStatus @default(PENDING)
+  // Client's description of what they want changed
+  comment       String              @db.Text
+  // Admin's internal note / response
+  adminNote     String?             @db.Text
+  resolvedAt    DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  // Relations
+  client      Client               @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  contentItem MonthlyContentItem   @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  assets      DesignRequestAsset[]
+
+  @@index([clientId])
+  @@index([contentItemId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// Reference files attached to a design request (e.g. a mood board image)
+model DesignRequestAsset {
+  id              String   @id @default(cuid())
+  designRequestId String
+  mediaId         String
+  createdAt       DateTime @default(now())
+
+  designRequest DesignRequest @relation(fields: [designRequestId], references: [id], onDelete: Cascade)
+  media         Media         @relation(fields: [mediaId], references: [id])
+
+  @@index([designRequestId])
+}
+
+// =============================================================================
+// TEXT EDIT HISTORY
+// Immutable ledger of every client text change for audit & rollback.
+// =============================================================================
+
+model TextEditHistory {
+  id            String   @id @default(cuid())
+  contentItemId String
+  // "tagline" | "caption" | "cta" | "platform_caption:<platformId>"
+  field         String
+  oldValue      String?  @db.Text
+  newValue      String?  @db.Text
+  editedAt      DateTime @default(now())
+
+  contentItem MonthlyContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+
+  @@index([contentItemId])
+  @@index([editedAt])
+}
+
+// =============================================================================
+// FEEDBACK
+// General satisfaction feedback from clients (ratings, support messages)
+// =============================================================================
+
+model Feedback {
+  id        String   @id @default(cuid())
+  clientId  String
+  // "general" | "content" | "platform" | "support" | "billing"
+  type      String
+  message   String   @db.Text
+  // 1–5 star rating, optional
+  rating    Int?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([isRead])
+  @@index([type])
+}
+
+// =============================================================================
+// NOTIFICATIONS
+// In-app notification feed per user (both Admin and Client)
+// =============================================================================
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String           @db.Text
+  isRead    Boolean          @default(false)
+  // Deep-link path inside the app e.g. "/client/content/xyz"
+  link      String?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+}
+
+// =============================================================================
+// AUDIT LOG
+// Append-only event log for compliance and debugging.
+// Every significant action writes here.
+// =============================================================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  // Verb in SCREAMING_SNAKE e.g. "APPROVED_CONTENT", "PUBLISHED_BATCH"
+  action     String
+  // Prisma model name of the affected record
+  entityType String
+  entityId   String
+  // Additional context (before/after snapshots, request metadata)
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+}
