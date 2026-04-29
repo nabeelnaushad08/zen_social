@@ -1,4 +1,5 @@
 import { prisma } from "./db";
+import { Prisma } from "@prisma/client";
 
 interface WriteAuditLogParams {
   userId: string;
@@ -19,7 +20,7 @@ export function writeAuditLog(params: WriteAuditLogParams): void {
         action: params.action,
         entityType: params.entityType,
         entityId: params.entityId,
-        metadata: params.metadata ?? undefined,
+        metadata: (params.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
         ipAddress: params.ipAddress,
       },
     })

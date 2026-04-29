@@ -37,7 +37,9 @@ const nextConfig = {
     minimumCacheTTL: 604800,
   },
 
-  serverExternalPackages: ["@prisma/client", "bcryptjs"],
+  experimental: {
+    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
+  },
 
   compress: true,
 
