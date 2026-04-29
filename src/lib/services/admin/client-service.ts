@@ -183,11 +183,11 @@ export async function updateClient(clientId: string, input: UpdateClientInput) {
 // ─── Toggle active ────────────────────────────────────────────────────────────
 
 export async function setClientActive(clientId: string, isActive: boolean) {
-  await getClient(clientId);
+  const client = await getClient(clientId);
   return prisma.$transaction([
     prisma.client.update({ where: { id: clientId }, data: { isActive } }),
     prisma.user.update({
-      where: { client: { id: clientId } },
+      where: { id: client.user.id },
       data: { isActive },
     }),
   ]);
