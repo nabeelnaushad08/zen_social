@@ -8,20 +8,6 @@
       "maxDuration": 30
     }
   },
-  "env": {
-    "DATABASE_URL": "@database-url",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
-    "NEXTAUTH_URL": "@nextauth-url",
-    "CLOUDINARY_CLOUD_NAME": "@cloudinary-cloud-name",
-    "CLOUDINARY_API_KEY": "@cloudinary-api-key",
-    "CLOUDINARY_API_SECRET": "@cloudinary-api-secret",
-    "RESEND_API_KEY": "@resend-api-key",
-    "EMAIL_FROM": "@email-from",
-    "ADMIN_EMAIL": "@admin-email",
-    "ADMIN_PASSWORD": "@admin-password",
-    "ADMIN_FIRST_NAME": "@admin-first-name",
-    "ADMIN_LAST_NAME": "@admin-last-name"
-  },
   "headers": [
     {
       "source": "/api/(.*)",
