@@ -44,6 +44,14 @@ export async function markFeedbackRead(feedbackId: string, isRead: boolean) {
   return prisma.feedback.update({ where: { id: feedbackId }, data: { isRead } });
 }
 
+export async function respondToFeedback(feedbackId: string, adminResponse: string) {
+  await getFeedback(feedbackId);
+  return prisma.feedback.update({
+    where: { id: feedbackId },
+    data: { adminResponse, isRead: true },
+  });
+}
+
 export async function getUnreadFeedbackCount() {
   return prisma.feedback.count({ where: { isRead: false } });
 }

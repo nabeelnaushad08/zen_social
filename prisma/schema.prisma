@@ -538,15 +538,16 @@ model TextEditHistory {
 // =============================================================================
 
 model Feedback {
-  id        String   @id @default(cuid())
-  clientId  String
+  id            String   @id @default(cuid())
+  clientId      String
   // "general" | "content" | "platform" | "support" | "billing"
-  type      String
-  message   String   @db.Text
+  type          String
+  message       String   @db.Text
   // 1–5 star rating, optional
-  rating    Int?
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
+  rating        Int?
+  isRead        Boolean  @default(false)
+  adminResponse String?  @db.Text
+  createdAt     DateTime @default(now())
 
   client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
 

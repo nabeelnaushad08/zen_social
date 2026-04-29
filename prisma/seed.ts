@@ -45,8 +45,10 @@ async function main() {
   });
 
   // ── Admin User ─────────────────────────────────────────────────────────────
-  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@zensocial.io";
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "changeme123";
+  const adminEmail = process.env.ADMIN_EMAIL ?? process.env.SEED_ADMIN_EMAIL ?? "admin@zensocial.io";
+  const adminPassword = process.env.ADMIN_PASSWORD ?? process.env.SEED_ADMIN_PASSWORD ?? "changeme123";
+  const adminFirstName = process.env.ADMIN_FIRST_NAME ?? "Admin";
+  const adminLastName = process.env.ADMIN_LAST_NAME ?? "ZenSocial";
 
   await prisma.user.upsert({
     where: { email: adminEmail },
@@ -55,8 +57,8 @@ async function main() {
       email: adminEmail,
       passwordHash: await hash(adminPassword, 12),
       role: "ADMIN",
-      firstName: "Admin",
-      lastName: "ZenSocial",
+      firstName: adminFirstName,
+      lastName: adminLastName,
       isActive: true,
     },
   });

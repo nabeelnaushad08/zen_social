@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { handleApiError } from "@/lib/errors";
-import { getFeedback, markFeedbackRead } from "@/lib/services/admin/feedback-service";
+import { getFeedback, markFeedbackRead, respondToFeedback } from "@/lib/services/admin/feedback-service";
 import { ok } from "@/lib/utils";
 
 export async function GET(
@@ -26,7 +26,12 @@ export async function PATCH(
   try {
     await requireAdmin();
     const body = await req.json();
-    const item = await markFeedbackRead(params.feedbackId, Boolean(body.isRead));
+    let item;
+    if (typeof body.adminResponse === "string") {
+      item = await respondToFeedback(params.feedbackId, body.adminResponse);
+    } else {
+      item = await markFeedbackRead(params.feedbackId, Boolean(body.isRead));
+    }
     return NextResponse.json(ok(item));
   } catch (error) {
     return handleApiError(error);
