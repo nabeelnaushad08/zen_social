@@ -2,23 +2,21 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, Lock, Loader2, Sparkles } from "lucide-react";
+import { Mail, Lock, Sparkles, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
     setLoading(true);
 
     const result = await signIn("credentials", {
@@ -29,13 +27,13 @@ export default function LoginPage() {
 
     setLoading(false);
 
-    if (result?.error) {
-      toast({ variant: "destructive", title: "Login failed", description: "Invalid email or password." });
+    if (!result || result.error) {
+      setError("Invalid email or password. Please try again.");
       return;
     }
 
-    router.push("/");
-    router.refresh();
+    // Full page navigation so the server reads the fresh session cookie
+    window.location.href = "/";
   }
 
   return (
@@ -110,6 +108,13 @@ export default function LoginPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+                <AlertCircle className="size-4 shrink-0" />
+                {error}
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <div className="relative">
@@ -144,8 +149,8 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" size="lg" loading={loading}>
-              {!loading && "Sign in"}
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? "Signing in…" : "Sign in"}
             </Button>
           </form>
 
