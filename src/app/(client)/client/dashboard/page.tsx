@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import {
   Grid3X3, CheckSquare, Palette, ArrowRight,
-  CheckCircle2, Clock, AlertCircle,
+  CheckCircle2, Clock, AlertCircle, FileText, CreditCard,
+  ClipboardList, ExternalLink, Calendar,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,9 +38,39 @@ function StatTile({ icon: Icon, label, value, color, href }: { icon: React.Eleme
   );
 }
 
+function contractStatusColor(s: string) {
+  if (s === "ACTIVE") return "bg-emerald-100 text-emerald-700";
+  if (s === "EXPIRED") return "bg-gray-100 text-gray-600";
+  if (s === "CANCELLED") return "bg-red-100 text-red-600";
+  return "bg-amber-100 text-amber-700";
+}
+
+function paymentStatusColor(s: string) {
+  if (s === "PAID") return "bg-emerald-100 text-emerald-700";
+  if (s === "OVERDUE") return "bg-red-100 text-red-600";
+  if (s === "CANCELLED") return "bg-gray-100 text-gray-600";
+  return "bg-amber-100 text-amber-700";
+}
+
+function taskStatusColor(s: string) {
+  if (s === "COMPLETED") return "bg-emerald-100 text-emerald-700";
+  if (s === "IN_PROGRESS") return "bg-blue-100 text-blue-700";
+  if (s === "CANCELLED") return "bg-gray-100 text-gray-600";
+  return "bg-amber-100 text-amber-700";
+}
+
+function daysUntil(dateStr: string | null): number | null {
+  if (!dateStr) return null;
+  const diff = new Date(dateStr).getTime() - Date.now();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
 export default function ClientDashboardPage() {
   const { data: session } = useSession();
   const { data, isLoading } = useSWR("/api/client/dashboard", fetcher);
+  const { data: contractsData } = useSWR("/api/client/contracts", fetcher);
+  const { data: paymentsData } = useSWR("/api/client/payments", fetcher);
+  const { data: tasksData } = useSWR("/api/client/tasks", fetcher);
 
   const d = data?.data;
   const breakdown = d?.approvalBreakdown ?? {};
@@ -48,6 +79,14 @@ export default function ClientDashboardPage() {
   const pending = breakdown["PENDING"] ?? 0;
   const revision = breakdown["REVISION_REQUESTED"] ?? 0;
   const approvalProgress = totalItems > 0 ? Math.round((approved / totalItems) * 100) : 0;
+
+  const contracts = contractsData?.data ?? [];
+  const payments = paymentsData?.data ?? [];
+  const tasks = tasksData?.data ?? [];
+
+  const activeContract = contracts.find((c: { status: string }) => c.status === "ACTIVE");
+  const pendingPayments = payments.filter((p: { status: string }) => p.status === "UNPAID" || p.status === "OVERDUE");
+  const openTasks = tasks.filter((t: { status: string }) => t.status === "PENDING" || t.status === "IN_PROGRESS");
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
@@ -139,9 +178,132 @@ export default function ClientDashboardPage() {
           )}
         </div>
 
+        {/* Contracts, Payments, Tasks — three-column row */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Active contract */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <Card className="h-full">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <FileText className="size-4" /> Contract
+                  </CardTitle>
+                  <CardDescription>Current agreement</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" asChild><Link href="/client/contracts">View all</Link></Button>
+              </CardHeader>
+              <CardContent>
+                {activeContract ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-sm">{activeContract.title}</p>
+                      <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${contractStatusColor(activeContract.status)}`}>{activeContract.status}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(activeContract.startDate).toLocaleDateString()}
+                      {activeContract.endDate && <> → {new Date(activeContract.endDate).toLocaleDateString()}</>}
+                    </p>
+                    {activeContract.endDate && (() => {
+                      const days = daysUntil(activeContract.endDate);
+                      if (days === null) return null;
+                      return (
+                        <p className={`text-xs font-medium ${days < 0 ? "text-red-600" : days < 30 ? "text-amber-600" : "text-emerald-600"}`}>
+                          {days < 0 ? `Expired ${Math.abs(days)}d ago` : `${days} days remaining`}
+                        </p>
+                      );
+                    })()}
+                    {activeContract.documentUrl && (
+                      <a href={activeContract.documentUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                        <ExternalLink className="size-3" /> View document
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No active contract.</p>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Payments */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+            <Card className="h-full">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CreditCard className="size-4" /> Payments
+                  </CardTitle>
+                  <CardDescription>
+                    {pendingPayments.length > 0 ? `${pendingPayments.length} pending` : "All up to date"}
+                  </CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" asChild><Link href="/client/payments">View all</Link></Button>
+              </CardHeader>
+              <CardContent>
+                {pendingPayments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No outstanding payments.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {pendingPayments.slice(0, 3).map((p: { id: string; amount: string; currency: string; status: string; dueDate: string; description: string | null }) => (
+                      <div key={p.id} className="flex items-center justify-between text-sm">
+                        <div>
+                          <p className="font-medium">{p.currency} {parseFloat(p.amount).toFixed(2)}</p>
+                          <p className="text-xs text-muted-foreground">Due {new Date(p.dueDate).toLocaleDateString()}</p>
+                        </div>
+                        <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${paymentStatusColor(p.status)}`}>{p.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Tasks */}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <Card className="h-full">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <ClipboardList className="size-4" /> Tasks
+                  </CardTitle>
+                  <CardDescription>
+                    {openTasks.length > 0 ? `${openTasks.length} open` : "Nothing pending"}
+                  </CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" asChild><Link href="/client/tasks">View all</Link></Button>
+              </CardHeader>
+              <CardContent>
+                {openTasks.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No tasks assigned.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {openTasks.slice(0, 4).map((t: { id: string; title: string; status: string; link: string | null; linkLabel: string | null; dueDate: string | null }) => (
+                      <div key={t.id} className="space-y-0.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium leading-tight">{t.title}</p>
+                          <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-medium shrink-0 ${taskStatusColor(t.status)}`}>{t.status.replace("_"," ")}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {t.dueDate && <span className="flex items-center gap-0.5"><Calendar className="size-3" />{new Date(t.dueDate).toLocaleDateString()}</span>}
+                          {t.link && (
+                            <a href={t.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-0.5 text-primary hover:underline">
+                              <ExternalLink className="size-3" />{t.linkLabel || "Link"}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
         {/* Batch history */}
         {d?.batchHistory?.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Content history</CardTitle>

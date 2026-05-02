@@ -254,7 +254,7 @@ export default function TemplatesPage() {
           </DialogHeader>
           <form onSubmit={handleCreate} className="space-y-4 mt-2">
             {/* File upload zone */}
-            <div className="border-2 border-dashed rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+            <div className="relative border-2 border-dashed rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
               {form.secureUrl ? (
                 <div className="space-y-2">
                   <MediaPreview url={form.secureUrl} format={form.format} resourceType={form.resourceType} className="max-h-40 w-auto mx-auto" />

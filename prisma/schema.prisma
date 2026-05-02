@@ -79,6 +79,27 @@ enum NotificationType {
   SYSTEM
 }
 
+enum ContractStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  PENDING
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  OVERDUE
+  CANCELLED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
 // =============================================================================
 // USERS & AUTH
 // =============================================================================
@@ -156,6 +177,9 @@ model Client {
   monthlyBatches MonthlyBatch[]
   designRequests DesignRequest[]
   feedback       Feedback[]
+  contracts      Contract[]
+  payments       Payment[]
+  tasks          ClientTask[]
 
   @@index([nicheId])
   @@index([packageId])
@@ -576,6 +600,78 @@ model Notification {
 
   @@index([userId, isRead])
   @@index([userId, createdAt])
+}
+
+// =============================================================================
+// CONTRACTS
+// Admin-managed contracts per client with timeline and document links.
+// =============================================================================
+
+model Contract {
+  id           String         @id @default(cuid())
+  clientId     String
+  title        String
+  status       ContractStatus @default(ACTIVE)
+  startDate    DateTime
+  endDate      DateTime?
+  documentUrl  String?
+  notes        String?        @db.Text
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([status])
+}
+
+// =============================================================================
+// PAYMENTS
+// Admin-managed payment records per client.
+// =============================================================================
+
+model Payment {
+  id          String        @id @default(cuid())
+  clientId    String
+  amount      Decimal       @db.Decimal(10, 2)
+  currency    String        @default("USD")
+  status      PaymentStatus @default(UNPAID)
+  dueDate     DateTime
+  paidAt      DateTime?
+  invoiceUrl  String?
+  description String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// =============================================================================
+// CLIENT TASKS
+// Admin-assigned tasks visible in the client dashboard.
+// =============================================================================
+
+model ClientTask {
+  id          String     @id @default(cuid())
+  clientId    String
+  title       String
+  description String?    @db.Text
+  status      TaskStatus @default(PENDING)
+  link        String?
+  linkLabel   String?
+  dueDate     DateTime?
+  sortOrder   Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([status])
 }
 
 // =============================================================================

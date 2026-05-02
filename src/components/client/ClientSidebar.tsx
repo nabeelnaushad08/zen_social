@@ -6,7 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, Grid3X3, CheckSquare, Palette, MessageCircle,
-  LogOut, Sparkles, ChevronRight, Bell,
+  LogOut, Sparkles, ChevronRight, Bell, FileText, CreditCard, ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +16,9 @@ const navItems = [
   { href: "/client/content",         icon: Grid3X3,         label: "My Content" },
   { href: "/client/approvals",       icon: CheckSquare,     label: "Approvals" },
   { href: "/client/design-requests", icon: Palette,         label: "Design Requests" },
+  { href: "/client/contracts",       icon: FileText,        label: "Contracts" },
+  { href: "/client/payments",        icon: CreditCard,      label: "Payments" },
+  { href: "/client/tasks",           icon: ClipboardList,   label: "Tasks" },
   { href: "/client/feedback",        icon: MessageCircle,   label: "Feedback" },
 ];
 

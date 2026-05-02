@@ -21,7 +21,7 @@ export async function listFeedback(searchParams: URLSearchParams) {
       take: limit,
       orderBy: { createdAt: "desc" },
       include: {
-        client: { select: { id: true, businessName: true, slug: true } },
+        client: { select: { id: true, businessName: true, slug: true, user: { select: { email: true } } } },
       },
     }),
     prisma.feedback.count({ where }),
@@ -33,7 +33,7 @@ export async function listFeedback(searchParams: URLSearchParams) {
 export async function getFeedback(feedbackId: string) {
   const item = await prisma.feedback.findUnique({
     where: { id: feedbackId },
-    include: { client: { select: { id: true, businessName: true } } },
+    include: { client: { select: { id: true, businessName: true, user: { select: { email: true } } } } },
   });
   if (!item) throw new ApiError(404, "Feedback not found");
   return item;
