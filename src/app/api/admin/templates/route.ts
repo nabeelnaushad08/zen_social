@@ -6,6 +6,8 @@ import { listTemplates, createTemplate } from "@/lib/services/admin/template-ser
 import { writeAuditLog } from "@/lib/audit";
 import { buildPaginationMeta, ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();

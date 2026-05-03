@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { getClientDesignRequest } from "@/lib/services/client/design-request-service";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { requestId: string } },

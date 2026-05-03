@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/db";
 import { ok, currentMonthYear } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(_req: NextRequest) {
   try {
     const session = await requireClient();

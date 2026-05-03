@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { getClientContent } from "@/lib/services/client/content-service";
 import { buildPaginationMeta, ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/client/content
 // Query params: platform, approvalStatus, month, year, page, limit
 export async function GET(req: NextRequest) {

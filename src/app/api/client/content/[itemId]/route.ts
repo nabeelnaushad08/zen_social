@@ -9,6 +9,8 @@ import {
 } from "@/lib/services/client/content-service";
 import { getClientIp, ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { itemId: string } },

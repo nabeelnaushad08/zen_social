@@ -6,6 +6,8 @@ import { getNiche, updateNiche, toggleNicheActive } from "@/lib/services/admin/n
 import { writeAuditLog } from "@/lib/audit";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { nicheId: string } },

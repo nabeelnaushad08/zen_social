@@ -6,6 +6,8 @@ import { listClients, createClient } from "@/lib/services/admin/client-service";
 import { writeAuditLog } from "@/lib/audit";
 import { buildPaginationMeta, ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     const session = await requireAdmin();

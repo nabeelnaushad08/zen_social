@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { getFeedback, markFeedbackRead, respondToFeedback } from "@/lib/services/admin/feedback-service";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { feedbackId: string } },

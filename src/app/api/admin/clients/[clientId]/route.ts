@@ -6,6 +6,8 @@ import { getClient, updateClient, setClientActive } from "@/lib/services/admin/c
 import { writeAuditLog } from "@/lib/audit";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { clientId: string } },

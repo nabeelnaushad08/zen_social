@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/db";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/platforms — list all active platforms (used by both admin and client)
 export async function GET() {
   try {

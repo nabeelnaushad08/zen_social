@@ -6,6 +6,8 @@ import { publishBatch } from "@/lib/services/admin/batch-service";
 import { writeAuditLog } from "@/lib/audit";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { batchId: string } },

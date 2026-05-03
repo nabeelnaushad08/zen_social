@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { getApprovalHistory } from "@/lib/services/client/approval-service";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/client/approvals — full approval history for the client
 export async function GET(_req: NextRequest) {
   try {

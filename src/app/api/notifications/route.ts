@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { prisma } from "@/lib/db";
 import { parsePagination, buildPaginationMeta, ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/notifications — returns paginated notifications for the current user
 export async function GET(req: NextRequest) {
   try {

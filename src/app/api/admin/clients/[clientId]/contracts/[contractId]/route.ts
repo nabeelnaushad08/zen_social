@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 const UpdateContractSchema = z.object({
   title: z.string().min(1).optional(),
   status: z.enum(["ACTIVE", "EXPIRED", "CANCELLED", "PENDING"]).optional(),

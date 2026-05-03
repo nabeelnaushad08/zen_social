@@ -6,6 +6,8 @@ import { listNiches, createNiche } from "@/lib/services/admin/niche-service";
 import { writeAuditLog } from "@/lib/audit";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();

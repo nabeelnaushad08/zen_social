@@ -5,6 +5,8 @@ import { SubmitDesignRequestSchema } from "@/lib/validations/client";
 import { submitDesignRequest } from "@/lib/services/client/design-request-service";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { itemId: string } },

@@ -6,6 +6,8 @@ import { listPackages, createPackage } from "@/lib/services/admin/package-servic
 import { writeAuditLog } from "@/lib/audit";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();

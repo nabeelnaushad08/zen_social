@@ -5,6 +5,8 @@ import { SubmitFeedbackSchema } from "@/lib/validations/client";
 import { submitFeedback, getClientFeedbackHistory } from "@/lib/services/client/feedback-service";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(_req: NextRequest) {
   try {
     const session = await requireClient();

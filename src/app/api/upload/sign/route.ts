@@ -3,6 +3,8 @@ import { requireAuth } from "@/lib/api-auth";
 import { handleApiError } from "@/lib/errors";
 import { generateUploadSignature, CloudinaryFolders } from "@/lib/cloudinary";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/upload/sign
 // Body: { context: "template" | "design-request", nicheSlug?: string }
 // Returns signed upload params for direct browser-to-Cloudinary upload.

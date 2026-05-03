@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { listFeedback } from "@/lib/services/admin/feedback-service";
 import { buildPaginationMeta, ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();

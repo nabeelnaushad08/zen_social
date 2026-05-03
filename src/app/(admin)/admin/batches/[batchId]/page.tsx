@@ -227,11 +227,11 @@ export default function BatchDetailPage() {
     <div className="animate-fade-in">
       <PageHeader
         title={`${MONTHS[batch.month - 1]} ${batch.year} — ${batch.client.businessName}`}
-        description={
-          batch.niche ? `${batch.client.niche?.name ?? ""} · ` : ""
-          + `${total} item${total !== 1 ? "s" : ""}`
-          + (batch.dueDate ? ` · Due ${new Date(batch.dueDate).toLocaleDateString()}` : "")
-        }
+        description={[
+          batch.client.niche?.name,
+          `${total} item${total !== 1 ? "s" : ""}`,
+          batch.dueDate ? `Due ${new Date(batch.dueDate).toLocaleDateString()}` : null,
+        ].filter(Boolean).join(" · ")}
         action={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => router.back()}>

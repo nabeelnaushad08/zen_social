@@ -5,6 +5,8 @@ import { ApproveContentSchema } from "@/lib/validations/client";
 import { approveContentItem } from "@/lib/services/client/approval-service";
 import { getClientIp, ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(
   req: NextRequest,
   { params }: { params: { itemId: string } },

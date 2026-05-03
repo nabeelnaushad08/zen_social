@@ -6,6 +6,8 @@ import { listBatches, createBatch } from "@/lib/services/admin/batch-service";
 import { writeAuditLog } from "@/lib/audit";
 import { buildPaginationMeta, ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();

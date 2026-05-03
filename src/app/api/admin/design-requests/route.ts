@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { listDesignRequests } from "@/lib/services/admin/design-request-service";
 import { buildPaginationMeta, ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
   try {
     await requireAdmin();

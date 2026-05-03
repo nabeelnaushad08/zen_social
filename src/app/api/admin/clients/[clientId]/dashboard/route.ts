@@ -4,6 +4,8 @@ import { handleApiError } from "@/lib/errors";
 import { getClientDashboard } from "@/lib/services/admin/client-service";
 import { ok } from "@/lib/utils";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(
   _req: NextRequest,
   { params }: { params: { clientId: string } },
